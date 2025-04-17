@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能代理管理系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/@mdi/font@6.5.95/css/materialdesignicons.min.css" rel="stylesheet">
+<style>
+    :root {
+        --primary: #6366F1;  /* 调整为更柔和的紫色 */
+        --secondary: #8B5CF6; /* 新增辅助色 */
+        --background: #f5f7fb;  /* 更柔和的背景色 */
+        --card-bg: #FFFFFF;
+        --text: #1E293B;
+        --border: #E2E8F0;
+        --radius: 16px;  /* 增大圆角 */
+        --shadow: 0 4px 24px -6px rgba(0,0,0,0.1); /* 更柔和的阴影 */
+        --gradient: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%); /* 新增渐变色 */
+    }
+
+    body {
+        font-family: 'Inter', system-ui;
+        background: var(--background);
+        color: var(--text);
+        margin: 0;
+        padding: 2rem;
+        line-height: 1.6; /* 更好的行高 */
+    }
+
+    .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: grid;
+        gap: 2rem; /* 增大间距 */
+    }
+
+    .card {
+        background: var(--card-bg);
+        border-radius: var(--radius);
+        padding: 2rem; /* 增大内边距 */
+        box-shadow: var(--shadow);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* 更顺滑的动画曲线 */
+        border: 1px solid rgba(255,255,255,0.2); /* 微妙的边框 */
+    }
+
+    .card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 32px -8px rgba(0,0,0,0.15); /* 悬停时更强的阴影 */
+    }
+
+    .card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* 调整最小宽度 */
+        gap: 1.5rem;
+    }
+
+    input, select {
+        width: 100%;
+        padding: 1rem;
+        border: 2px solid var(--border);
+        border-radius: 12px;
+        background: var(--card-bg);
+        transition: all 0.3s;
+        font-size: 15px;
+        appearance: none; /* 移除默认样式 */
+    }
+
+    input:focus, select:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+    }
+
+    select {
+        background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right 1rem center;
+        background-size: 1.2em;
+    }
+
+    .btn {
+        background: var(--gradient);
+        color: white;
+        padding: 1rem 2rem;
+        border-radius: 12px;
+        border: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.75rem;
+        transition: all 0.3s;
+        font-weight: 500;
+        box-shadow: 0 2px 6px rgba(99, 102, 241, 0.2);
+    }
+
+    .btn:hover {
+        opacity: 0.95;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    }
+
+    .item-group {
+        border: 2px solid var(--border);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin: 1.25rem 0;
+        position: relative;
+        transition: all 0.3s;
+    }
+
+    .item-group:hover {
+        border-color: var(--primary);
+    }
+
+    .delete-btn {
+        background: #EF4444;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        transition: all 0.3s;
+    }
+
+    .delete-btn:hover {
+        background: #DC2626;
+        transform: scale(1.05);
+    }
+
+    #login-modal {
+        background: rgba(0,0,0,0.4);
+        backdrop-filter: blur(4px); /* 毛玻璃效果 */
+    }
+
+    .login-box {
+        background: var(--card-bg);
+        box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        transform: translateY(20px);
+        animation: modalEnter 0.4s ease forwards;
+    }
+
+    @keyframes modalEnter {
+        to { transform: translateY(0); opacity: 1; }
+    }
+
+    .badge {
+        background: var(--gradient);
+        font-weight: 500;
+        letter-spacing: 0.5px;
+    }
+
+    /* 新增加载动画 */
+    .btn.loading {
+        position: relative;
+        pointer-events: none;
+    }
+    .btn.loading:after {
+        content: "";
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        border: 2px solid #fff;
+        border-radius: 50%;
+        border-top-color: transparent;
+        animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+</style>
+</head>
+<body>
+    <div id="login-modal">
+        <div class="login-box">
+            <h2>管理员登录</h2>
+            <div class="grid" style="margin: 1.5rem 0; gap: 1rem;">
+                <input type="text" id="username" placeholder="用户名">
+                <input type="password" id="password" placeholder="密码">
+                <button class="btn" onclick="doLogin()">登录</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- 核心选择 -->
+        <div class="card">
+            <div class="card-header">
+                <h2 style="margin:0">核心选择</h2>
+                <span class="badge">v2.2</span>
+            </div>
+            <select id="core-type" class="grid">
+                <option value="clash">Clash Meta</option>
+                <option value="xray">Xray</option>
+                <option value="sing-box">sing-box</option>
+            </select>
+        </div>
+
+        <!-- IP分组配置 -->
+        <div class="card">
+            <div class="card-header">
+                <h2 style="margin:0">IP分组管理</h2>
+                <button class="btn" onclick="addIPGroup()">➕ 添加</button>
+            </div>
+            <div id="ip-group-list">
+                <div class="item-group">
+                    <div class="grid" style="gap: 1rem; grid-template-columns: 1fr 2fr 1fr;">
+                        <input type="text" class="group-name" placeholder="分组名称">
+                        <input type="text" class="ip-cidr" placeholder="IP/CIDR (多个用逗号分隔)">
+                        <select class="proxy-action">
+                            <option value="direct">直连</option>
+                            <option value="proxy">代理</option>
+                        </select>
+                    </div>
+                    <button class="delete-btn" onclick="this.parentElement.remove()">删除</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 代理服务器配置 -->
+        <div class="card">
+            <div class="card-header">
+                <h2 style="margin:0">代理服务器</h2>
+                <button class="btn" onclick="addProxy()">➕ 添加</button>
+            </div>
+            <div id="proxy-list">
+                <div class="item-group">
+                    <div class="grid" style="gap: 1rem;">
+                        <select class="proxy-type" onchange="updateAuthFields(this)" style="grid-column: span 2;">
+                            <option value="ss">Shadowsocks</option>
+                            <option value="vmess">VMess</option>
+                            <option value="vless">VLESS</option>
+                            <option value="trojan">Trojan</option>
+                            <option value="http">HTTP</option>
+                            <option value="socks5">SOCKS5</option>
+                            <option value="hysteria">Hysteria</option>
+                            <option value="hysteria2">Hysteria2</option>
+                            <option value="tuic">TUIC</option>
+                            <option value="wireguard">WireGuard</option>
+                        </select>
+                        <input type="text" class="proxy-name" placeholder="名称">
+                        <input type="text" class="proxy-server" placeholder="服务器地址">
+                        <input type="number" class="proxy-port" placeholder="端口">
+                        <div class="auth-fields" style="grid-column: span 4;"></div>
+                    </div>
+                    <button class="delete-btn" onclick="this.parentElement.remove()">删除</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 保存按钮 -->
+        <button class="btn" onclick="saveConfig()" style="width: 100%; padding: 1rem; font-size: 1.1em;">
+            💾 保存并应用配置
+        </button>
+    </div>
+
+    <script>
+        let authToken = null;
+
+        function updateAuthFields(select) {
+            const fields = select.closest('.item-group').querySelector('.auth-fields');
+            const type = select.value;
+            fields.innerHTML = '';
+
+            const authTemplates = {
+                ss: `
+                    <input type="text" class="cipher" placeholder="加密方式" value="aes-256-gcm">
+                    <input type="password" class="password" placeholder="密码">
+                    <select class="plugin" onchange="updateSSPlugin(this)">
+                        <option value="">无插件</option>
+                        <option value="obfs">混淆插件</option>
+                    </select>
+                    <div class="plugin-opts"></div>`,
+                vmess: `
+                    <input type="text" class="uuid" placeholder="UUID">
+                    <input type="number" class="alterId" placeholder="Alter ID" value="0">
+                    <select class="network">
+                        <option value="tcp">TCP</option>
+                        <option value="ws">WebSocket</option>
+                    </select>`,
+                vless: `
+                    <input type="text" class="uuid" placeholder="UUID">
+                    <select class="security">
+                        <option value="none">无加密</option>
+                        <option value="tls">TLS</option>
+                    </select>`,
+                trojan: `
+                    <input type="password" class="password" placeholder="密码">
+                    <input type="text" class="sni" placeholder="SNI">`,
+                http: `
+                    <input type="text" class="username" placeholder="用户名">
+                    <input type="password" class="password" placeholder="密码">`,
+                socks5: `
+                    <input type="text" class="username" placeholder="用户名">
+                    <input type="password" class="password" placeholder="密码">`,
+                hysteria: `
+                    <input type="text" class="protocol" placeholder="协议（udp/tcp）" value="udp">
+                    <input type="password" class="auth-str" placeholder="认证字符串">
+                    <input type="text" class="obfs-password" placeholder="混淆密码">
+                    <input type="number" class="ports" placeholder="端口范围（如: 10000-20000）">`,
+                hysteria2: `
+                    <input type="password" class="password" placeholder="密码">
+                    <input type="text" class="obfs" placeholder="混淆类型">
+                    <input type="text" class="obfs-password" placeholder="混淆密码">`,
+                tuic: `
+                    <input type="text" class="uuid" placeholder="UUID">
+                    <input type="password" class="password" placeholder="密码">
+                    <select class="congestion-control">
+                        <option value="cubic">CUBIC</option>
+                        <option value="bbr">BBR</option>
+                    </select>`,
+                wireguard: `
+                    <input type="text" class="private-key" placeholder="私钥">
+                    <input type="text" class="peer-public-key" placeholder="对端公钥">
+                    <input type="text" class="preshared-key" placeholder="预共享密钥">
+                    <input type="text" class="peer-address" placeholder="对端地址">
+                    <input type="number" class="mtu" placeholder="MTU" value="1420">`
+            };
+
+            fields.innerHTML = authTemplates[type] || '';
+            if (type === 'ss') updateSSPlugin(fields.querySelector('.plugin'));
+        }
+
+        function updateSSPlugin(select) {
+            const optsDiv = select?.parentElement.querySelector('.plugin-opts');
+            if (optsDiv) {
+                optsDiv.innerHTML = select.value === 'obfs' ? `
+                    <select class="obfs-mode">
+                        <option value="http">HTTP混淆</option>
+                        <option value="tls">TLS混淆</option>
+                    </select>
+                    <input type="text" class="obfs-host" placeholder="混淆域名">
+                ` : '';
+            }
+        }
+
+        function addProxy() {
+            const newItem = document.createElement('div');
+            newItem.className = 'item-group';
+            newItem.innerHTML = document.querySelector('#proxy-list .item-group').innerHTML;
+            document.getElementById('proxy-list').appendChild(newItem);
+            newItem.querySelector('.proxy-type').dispatchEvent(new Event('change'));
+        }
+
+        function addIPGroup() {
+            const newItem = document.createElement('div');
+            newItem.className = 'item-group';
+            newItem.innerHTML = document.querySelector('#ip-group-list .item-group').innerHTML;
+            document.getElementById('ip-group-list').appendChild(newItem);
+        }
+
+        async function doLogin() {
+            const res = await fetch('/api/login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    username: document.getElementById('username').value,
+                    password: document.getElementById('password').value
+                })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                authToken = data.token;
+                document.getElementById('login-modal').style.display = 'none';
+            } else {
+                alert('登录失败，请检查凭证');
+            }
+        }
+
+        async function saveConfig() {
+            if (!authToken) {
+                document.getElementById('login-modal').style.display = 'grid';
+                return;
+            }
+
+            const payload = {
+                core: {
+                    type: document.getElementById('core-type').value,
+                    version: '1.8.4'
+                },
+                proxies: [],
+                ip_groups: []
+            };
+
+            // 收集代理配置
+            document.querySelectorAll('#proxy-list .item-group').forEach(item => {
+                const proxy = {
+                    type: item.querySelector('.proxy-type').value,
+                    name: item.querySelector('.proxy-name').value,
+                    server: item.querySelector('.proxy-server').value,
+                    port: parseInt(item.querySelector('.proxy-port').value),
+                    auth: {}
+                };
+
+                item.querySelectorAll('.auth-fields input, .auth-fields select').forEach(field => {
+                    proxy.auth[field.className] = field.value;
+                });
+
+                payload.proxies.push(proxy);
+            });
+
+            // 收集IP分组
+            document.querySelectorAll('#ip-group-list .item-group').forEach(item => {
+                payload.ip_groups.push({
+                    name: item.querySelector('.group-name').value,
+                    ips: item.querySelector('.ip-cidr').value.split(','),
+                    action: item.querySelector('.proxy-action').value
+                });
+            });
+
+            try {
+                const res = await fetch('/api/config', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': authToken 
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await res.json();
+                if (res.ok) {
+                    alert('配置保存成功！');
+                    location.reload();
+                } else {
+                    throw new Error(result.error || '配置保存失败');
+                }
+            } catch (err) {
+                alert(`错误: ${err.message}`);
+            }
+        }
+    </script>
+</body>
+</html>
